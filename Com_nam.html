@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Xe Cơm Nắm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-control {
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: transform 0.1s;
+        }
+        .btn-plus { background-color: #10b981; }
+        .btn-minus { background-color: #ef4444; }
+        .btn-control:active { transform: scale(0.9); }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-xl mx-auto">
+        <h1 class="text-2xl font-bold text-center text-orange-600 mb-6 uppercase">🍙 Quản Lý Cơm Nấm</h1>
+
+        <!-- Thông tin chung -->
+        <div class="card p-4 mb-4">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Chi nhánh</label>
+                    <input type="text" id="branch" class="w-full mt-1 p-2 border rounded-md" value="CN8">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Buổi bán</label>
+                    <input type="text" id="shift" class="w-full mt-1 p-2 border rounded-md" value="Sáng 17/7/2026">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase text-blue-600">Tiền két đầu buổi (đ)</label>
+                    <input type="number" id="cashBox" class="w-full mt-1 p-2 border border-blue-200 rounded-md font-bold text-blue-700" value="260000">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase text-purple-600">Tiền chuyển khoản (đ)</label>
+                    <input type="number" id="bankTransfer" class="w-full mt-1 p-2 border border-purple-200 rounded-md font-bold text-purple-700" value="0">
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách món -->
+        <div class="card p-4 mb-4 overflow-x-auto">
+            <h2 class="font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between">
+                <span>Chi tiết hàng hóa</span>
+                <span class="text-xs text-gray-400 font-normal self-end">* Đơn vị: Cái</span>
+            </h2>
+            
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-gray-500 border-b">
+                        <th class="text-left pb-2 font-medium">Tên món</th>
+                        <th class="text-center pb-2 font-medium w-20">Đầu ngày</th>
+                        <th class="text-center pb-2 font-medium w-24">Đã bán</th>
+                    </tr>
+                </thead>
+                <tbody id="product-list-body">
+                    <!-- JS render rows here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Nút tính toán -->
+        <button onclick="calculate()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 mb-6 flex items-center justify-center gap-2">
+            <span>🧮</span> TÍNH TOÁN & XUẤT BÁO CÁO
+        </button>
+
+        <!-- Kết quả hiển thị -->
+        <div id="report-section" class="card p-4 hidden">
+            <div id="capture-area" class="bg-white p-4 border rounded-lg">
+                <div class="text-center border-b-2 border-dashed pb-4 mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 uppercase">Báo Cáo Doanh Thu</h3>
+                    <p id="res-info" class="text-sm text-gray-600 italic"></p>
+                </div>
+                
+                <table class="w-full text-sm mb-4">
+                    <thead>
+                        <tr class="border-b text-gray-600">
+                            <th class="text-left py-2">Món ăn</th>
+                            <th class="text-center py-2">Nhập</th>
+                            <th class="text-center py-2">Bán</th>
+                            <th class="text-center py-2">Dư</th>
+                            <th class="text-right py-2">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody id="res-table-body">
+                        <!-- Chi tiết từng loại -->
+                    </tbody>
+                </table>
+
+                <div class="border-t pt-4 space-y-2 font-bold text-gray-800">
+                    <div class="flex justify-between text-blue-700">
+                        <span>TỔNG DOANH THU:</span>
+                        <span id="res-revenue">0đ</span>
+                    </div>
+                    <div class="flex justify-between text-gray-500 font-normal text-xs">
+                        <span>Tiền két:</span>
+                        <span id="res-cashbox-view">0đ</span>
+                    </div>
+                    <div class="flex justify-between text-purple-700">
+                        <span>CHUYỂN KHOẢN:</span>
+                        <span id="res-transfer">0đ</span>
+                    </div>
+                    <div class="flex justify-between border-t-2 border-gray-100 pt-2 text-lg text-green-700 font-black">
+                        <span>TIỀN MẶT:</span>
+                        <span id="res-cash">0đ</span>
+                    </div>
+                </div>
+                
+                <p class="text-[10px] text-gray-400 mt-4 text-center italic">Hệ thống quản lý xe cơm nấm - Generated at <span id="res-time"></span></p>
+            </div>
+
+            <button onclick="downloadImage()" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2">
+                📸 TẢI ẢNH
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const products = [
+            { id: 'ca-hoi', name: 'Cơm nắm cá hồi', price: 22000 },
+            { id: 'ga-mayo', name: 'Cơm nắm gà mayo', price: 18000 },
+            { id: 'ga-phomai', name: 'Cơm nắm gà phô mai', price: 22000 },
+            { id: 'bo-ham', name: 'Cơm nắm bò hầm', price: 23000 },
+            { id: 'trung-chabong', name: 'Cơm nắm trứng trà bông', price: 16000 },
+            { id: 'ca-ngu', name: 'Cơm nắm cá ngừ', price: 20000 }
+        ];
+
+        const data = {};
+
+        function renderProducts() {
+            const tbody = document.getElementById('product-list-body');
+            products.forEach(p => {
+                data[p.id] = { stock: 0, sold: 0 };
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-50 last:border-0";
+                tr.innerHTML = `
+                    <td class="py-4">
+                        <p class="font-bold text-gray-700">${p.name}</p>
+                        <p class="text-[10px] text-gray-400 uppercase">${p.price.toLocaleString()}đ</p>
+                    </td>
+                    <td class="py-4 text-center">
+                        <input type="number" onchange="updateStock('${p.id}', this.value)" 
+                            class="w-16 p-1 text-center border rounded bg-gray-50 focus:bg-white" 
+                            placeholder="0" min="0">
+                    </td>
+                    <td class="py-4">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="updateSold('${p.id}', -1)" class="btn-control btn-minus">-</button>
+                            <span id="sold-${p.id}" class="w-6 text-center font-bold text-gray-800">0</span>
+                            <button onclick="updateSold('${p.id}', 1)" class="btn-control btn-plus">+</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateStock(id, value) {
+            data[id].stock = parseInt(value) || 0;
+        }
+
+        function updateSold(id, delta) {
+            data[id].sold = Math.max(0, data[id].sold + delta);
+            document.getElementById(`sold-${id}`).innerText = data[id].sold;
+        }
+
+        function calculate() {
+            let totalRevenue = 0;
+            const resTableBody = document.getElementById('res-table-body');
+            const bankTransfer = parseInt(document.getElementById('bankTransfer').value) || 0;
+            const currentCashBox = parseInt(document.getElementById('cashBox').value) || 0;
+            
+            resTableBody.innerHTML = '';
+            
+            products.forEach(p => {
+                const sold = data[p.id].sold;
+                const stock = data[p.id].stock;
+                const remain = Math.max(0, stock - sold);
+                const subtotal = sold * p.price;
+                totalRevenue += subtotal;
+
+                if(stock > 0 || sold > 0) {
+                    const row = document.createElement('tr');
+                    row.className = "border-b border-gray-50 last:border-0";
+                    row.innerHTML = `
+                        <td class="py-2 text-gray-700">${p.name}</td>
+                        <td class="py-2 text-center text-gray-500">${stock}</td>
+                        <td class="py-2 text-center font-bold text-gray-800">${sold}</td>
+                        <td class="py-2 text-center ${remain > 0 ? 'text-orange-500' : 'text-gray-300'}">${remain}</td>
+                        <td class="py-2 text-right font-medium">${subtotal.toLocaleString()}đ</td>
+                    `;
+                    resTableBody.appendChild(row);
+                }
+            });
+
+            if (resTableBody.innerHTML === '') {
+                resTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">Không có dữ liệu bán hàng.</td></tr>';
+            }
+
+            document.getElementById('res-info').innerText = `${document.getElementById('branch').value} | ${document.getElementById('shift').value}`;
+            document.getElementById('res-revenue').innerText = totalRevenue.toLocaleString() + 'đ';
+            document.getElementById('res-transfer').innerText = bankTransfer.toLocaleString() + 'đ';
+            document.getElementById('res-cashbox-view').innerText = currentCashBox.toLocaleString() + 'đ';
+            document.getElementById('res-time').innerText = new Date().toLocaleString('vi-VN');
+            
+            // Tiền mặt = Doanh thu + Két nhập vào - Chuyển khoản
+            const finalCash = (totalRevenue + currentCashBox) - bankTransfer;
+            document.getElementById('res-cash').innerText = finalCash.toLocaleString() + 'đ';
+
+            document.getElementById('report-section').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        async function downloadImage() {
+            const element = document.getElementById('capture-area');
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: "#ffffff"
+            });
+            const dataUrl = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            const fileName = `DoanhThu_${document.getElementById('branch').value}_${document.getElementById('shift').value.replace(/[\/\s]/g, '_')}.png`;
+            link.download = fileName;
+            link.href = dataUrl;
+            link.click();
+        }
+
+        window.onload = renderProducts;
+    </script>
+</body>
+</html>
